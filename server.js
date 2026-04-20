@@ -6,7 +6,7 @@ const path = require('path');
 
 const app = express();
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: ['https://stellular-flan-1f7088.netlify.app', 'https://fanlink.com', 'http://localhost:3000'], credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
