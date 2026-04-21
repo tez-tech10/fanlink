@@ -29,6 +29,7 @@ router.put('/', auth, async (req, res) => {
     if (bg_color !== undefined)    { fields.push(`bg_color=$${i++}`);     vals.push(bg_color); }
     if (accent_color !== undefined){ fields.push(`accent_color=$${i++}`); vals.push(accent_color); }
     if (avatar_url !== undefined)  { fields.push(`avatar_url=$${i++}`);   vals.push(avatar_url); }
+    if (req.body.cover_url !== undefined) { fields.push(`cover_url=$${i++}`); vals.push(req.body.cover_url); }
     if (!fields.length) return res.status(400).json({ error: 'Nothing to update' });
     fields.push(`updated_at=NOW()`);
     vals.push(req.user.id);
