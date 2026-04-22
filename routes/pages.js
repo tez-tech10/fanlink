@@ -47,6 +47,10 @@ router.put('/username', auth, async (req, res) => {
   try {
     const exists = await pool.query('SELECT id FROM pages WHERE username=$1', [username.toLowerCase()]);
     if (exists.rows.length) return res.status(400).json({ error: 'Username already taken' });
+
+    // Check not taken by a tracking slug
+    const takenBySlug = await pool.query('SELECT id FROM tracking_slugs WHERE slug=$1', [username.toLowerCase()]);
+    if (takenBySlug.rows.length) return res.status(400).json({ error: 'This name is already used as a tracking link' });
     const { rows } = await pool.query('UPDATE pages SET username=$1,is_published=true,updated_at=NOW() WHERE user_id=$2 RETURNING *', [username.toLowerCase(), req.user.id]);
     res.json(rows[0]);
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
