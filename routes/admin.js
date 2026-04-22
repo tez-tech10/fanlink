@@ -16,7 +16,7 @@ router.get('/stats', auth, adminOnly, async (req, res) => {
     const total = await pool.query('SELECT COUNT(*) FROM users');
     const premium = await pool.query("SELECT COUNT(*) FROM users WHERE plan='premium' OR promo_expires_at > NOW()");
     const pages = await pool.query('SELECT COUNT(*) FROM pages WHERE is_published=true');
-    const banned = await pool.query("SELECT COUNT(*) FROM users WHERE is_banned=true");
+    const banned = await pool.query("SELECT COUNT(*) FROM users WHERE banned=true");
     res.json({
       total_users: parseInt(total.rows[0].count),
       premium_users: parseInt(premium.rows[0].count),
@@ -30,7 +30,7 @@ router.get('/stats', auth, adminOnly, async (req, res) => {
 router.get('/users', auth, adminOnly, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT u.id, u.email, u.name, u.plan, u.promo_expires_at, u.created_at, u.is_banned, u.is_admin,
+      `SELECT u.id, u.email, u.name, u.plan, u.promo_expires_at, u.created_at, u.banned, u.is_admin,
        p.username, p.is_published
        FROM users u LEFT JOIN pages p ON p.user_id=u.id
        ORDER BY u.created_at DESC`
@@ -57,7 +57,7 @@ router.put('/users/:id/ban', auth, adminOnly, async (req, res) => {
   const { banned } = req.body;
   try {
     const { rows } = await pool.query(
-      'UPDATE users SET is_banned=$1 WHERE id=$2 RETURNING id,email,is_banned',
+      'UPDATE users SET banned=$1 WHERE id=$2 RETURNING id,email,banned',
       [banned, req.params.id]
     );
     res.json(rows[0]);
