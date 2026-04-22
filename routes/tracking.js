@@ -28,8 +28,13 @@ router.post('/', auth, async (req, res) => {
       const { rows: ex } = await pool.query('SELECT id FROM tracking_slugs WHERE page_id=$1', [page_id]);
       if (ex.length >= 1) return res.status(403).json({ error: 'Free plan: 1 tracking link max. Upgrade for unlimited.' });
     }
+    // Check not taken by another tracking slug
     const taken = await pool.query('SELECT id FROM tracking_slugs WHERE slug=$1', [slug.toLowerCase()]);
-    if (taken.rows.length) return res.status(400).json({ error: 'Slug already taken' });
+    if (taken.rows.length) return res.status(400).json({ error: 'This slug is already in use as a tracking link' });
+
+    // Check not taken by a username (public page)
+    const takenByUser = await pool.query('SELECT id FROM pages WHERE username=$1', [slug.toLowerCase()]);
+    if (takenByUser.rows.length) return res.status(400).json({ error: 'This name is already used as a page username' });
     const { rows } = await pool.query(
       'INSERT INTO tracking_slugs (page_id,slug,of_url,name) VALUES ($1,$2,$3,$4) RETURNING *',
       [page_id, slug.toLowerCase(), of_url, name || slug]
