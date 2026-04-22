@@ -58,3 +58,37 @@ router.get('/r/:slug', async (req, res) => {
 });
 
 module.exports = router;
+
+// Get full page by tracking slug (replaces OF link with tracking URL)
+router.get('/page/:slug', async (req, res) => {
+  try {
+    const { rows: slugRows } = await pool.query(
+      'SELECT * FROM tracking_slugs WHERE slug=$1',
+      [req.params.slug.toLowerCase()]
+    );
+    if (!slugRows.length) return res.status(404).json({ error: 'Not found' });
+    const t = slugRows[0];
+
+    // Get the full page
+    const { rows: pages } = await pool.query('SELECT * FROM pages WHERE id=$1 AND is_published=true', [t.page_id]);
+    if (!pages.length) return res.status(404).json({ error: 'Page not found' });
+    const page = pages[0];
+
+    // Get links - replace OnlyFans URL with tracking URL
+    const { rows: links } = await pool.query(
+      'SELECT id,type,label,sub_label,url,icon_key,photo_url,position FROM links WHERE page_id=$1 AND visible=true ORDER BY position',
+      [page.id]
+    );
+
+    const trackedLinks = links.map(l => {
+      if (l.icon_key === 'onlyfans') return { ...l, url: t.of_url };
+      return l;
+    });
+
+    // Count click
+    await pool.query('UPDATE tracking_slugs SET clicks=clicks+1 WHERE id=$1', [t.id]);
+    await pool.query('INSERT INTO analytics (page_id,slug_id,event_type) VALUES ($1,$2,$3)', [t.page_id, t.id, 'slug_click']);
+
+    res.json({ ...page, links: trackedLinks, tracking_slug: t.slug });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
