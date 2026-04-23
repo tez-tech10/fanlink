@@ -97,4 +97,25 @@ router.get('/promo-requests', auth, adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Create agency account
+router.post('/create-agency', auth, adminOnly, async (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password required' });
+  try {
+    const bcrypt = require('bcryptjs');
+    const jwt = require('jsonwebtoken');
+    const existing = await pool.query('SELECT id FROM users WHERE email=$1', [email.toLowerCase()]);
+    if (existing.rows.length) return res.status(400).json({ error: 'Email already in use' });
+    const hash = await bcrypt.hash(password, 10);
+    const { rows } = await pool.query(
+      "INSERT INTO users (email, name, password_hash, plan, account_type) VALUES ($1,$2,$3,'premium','agency') RETURNING id,email,name,plan,account_type",
+      [email.toLowerCase(), name, hash]
+    );
+    const user = rows[0];
+    // Create a placeholder page for the agency (won't be published)
+    await pool.query("INSERT INTO pages (user_id, name, is_published) VALUES ($1,$2,false)", [user.id, name]);
+    res.json({ success: true, user });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
