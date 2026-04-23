@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const auth = require('../middleware/auth');
 const router = express.Router();
+const { genCode } = require('./deeplinks');
 
 const getPageId = async (userId) => {
   const { rows } = await pool.query('SELECT id FROM pages WHERE user_id=$1', [userId]);
@@ -39,7 +40,27 @@ router.post('/', auth, async (req, res) => {
       'INSERT INTO tracking_slugs (page_id,slug,of_url,name) VALUES ($1,$2,$3,$4) RETURNING *',
       [page_id, slug.toLowerCase(), of_url, name || slug]
     );
-    res.json(rows[0]);
+    const trackSlug = rows[0];
+
+    // Auto-generate deep link for the OF tracking URL
+    let deepLinkUrl = null;
+    try {
+      let code, taken = true;
+      while(taken) {
+        code = genCode();
+        const { rows: ex } = await pool.query('SELECT id FROM deep_links WHERE code=$1', [code]);
+        taken = ex.length > 0;
+      }
+      await pool.query(
+        'INSERT INTO deep_links (code, original_url, user_id) VALUES ($1,$2,$3)',
+        [code, of_url, req.user.id]
+      );
+      deepLinkUrl = 'https://fanlink.info/lnk/' + code;
+      // Update slug with deep link code for reference
+      await pool.query('UPDATE tracking_slugs SET deep_link_code=$1 WHERE id=$2', [code, trackSlug.id]).catch(()=>{});
+    } catch(de) { console.error('Deep link gen failed:', de.message); }
+
+    res.json({ ...trackSlug, deep_link: deepLinkUrl });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
