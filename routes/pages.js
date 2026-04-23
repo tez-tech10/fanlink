@@ -13,7 +13,12 @@ router.get('/', auth, async (req, res) => {
     const page = await getPage(req.user.id);
     if (!page) return res.status(404).json({ error: 'Page not found' });
     const { rows: links } = await pool.query('SELECT * FROM links WHERE page_id=$1 ORDER BY position', [page.id]);
-    res.json({ ...page, links });
+    // Attach deep links
+    const { rows: deepLinks } = await pool.query('SELECT link_id, code FROM deep_links WHERE user_id=$1', [req.user.id]);
+    const deepMap = {};
+    deepLinks.forEach(d => { deepMap[d.link_id] = 'https://fanlink.info/lnk/'+d.code; });
+    const linksWithDeep = links.map(l => ({ ...l, deep_link: deepMap[l.id]||null }));
+    res.json({ ...page, links: linksWithDeep });
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
 
