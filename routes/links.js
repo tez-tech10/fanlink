@@ -13,6 +13,8 @@ const getPageId = async (userId) => {
 const maybeCreateDeepLink = async (url, iconKey, linkId, userId) => {
   if (!url || !DEEP_PLATFORMS.includes(iconKey)) return null;
   try {
+    // Check table exists first
+    await pool.query('SELECT 1 FROM deep_links LIMIT 1');
     // Check if one already exists for this link
     const { rows: existing } = await pool.query(
       'SELECT * FROM deep_links WHERE link_id=$1', [linkId]
@@ -81,7 +83,7 @@ router.put('/:id', auth, async (req, res) => {
     // Update or create deep link if URL changed
     if (url !== undefined && icon_key !== undefined) {
       // Delete old deep link first
-      await pool.query('DELETE FROM deep_links WHERE link_id=$1', [req.params.id]);
+      try { await pool.query('DELETE FROM deep_links WHERE link_id=$1', [req.params.id]); } catch(de) { /* table may not exist */ }
       const deepLink = await maybeCreateDeepLink(url, icon_key || link.icon_key, req.params.id, req.user.id);
       return res.json({ ...link, deep_link: deepLink ? `https://fanlink.info/lnk/${deepLink.code}` : null });
     }
@@ -92,7 +94,7 @@ router.put('/:id', auth, async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
   try {
     const page_id = await getPageId(req.user.id);
-    await pool.query('DELETE FROM deep_links WHERE link_id=$1', [req.params.id]);
+    try { await pool.query('DELETE FROM deep_links WHERE link_id=$1', [req.params.id]); } catch(de) { /* table may not exist */ }
     await pool.query('DELETE FROM links WHERE id=$1 AND page_id=$2', [req.params.id, page_id]);
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
