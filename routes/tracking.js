@@ -13,7 +13,20 @@ router.get('/', auth, async (req, res) => {
   try {
     const page_id = await getPageId(req.user.id);
     const { rows } = await pool.query('SELECT * FROM tracking_slugs WHERE page_id=$1 ORDER BY created_at', [page_id]);
-    res.json(rows);
+    // Attach deep links
+    let slugsWithDeep = rows;
+    try {
+      const { rows: dl } = await pool.query(
+        "SELECT code FROM deep_links WHERE user_id=$1 AND link_id IS NULL ORDER BY created_at",
+        [req.user.id]
+      );
+      // Match by deep_link_code stored on slug
+      slugsWithDeep = rows.map(s => ({
+        ...s,
+        deep_link: s.deep_link_code ? 'https://fanlink.info/lnk/' + s.deep_link_code : null
+      }));
+    } catch(de) { /* deep_links table not ready */ }
+    res.json(slugsWithDeep);
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
 
