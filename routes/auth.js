@@ -114,11 +114,11 @@ router.post('/signin', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Invalid email or password' });
     if (!await bcrypt.compare(password, user.password_hash)) return res.status(401).json({ error: 'Invalid email or password' });
     const token = jwt.sign(
-      { id: user.id, email: user.email, plan: user.plan, is_admin: user.is_admin },
+      { id: user.id, email: user.email, plan: user.plan, is_admin: user.is_admin, account_type: user.account_type },
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, plan: user.plan, is_admin: user.is_admin } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, plan: user.plan, is_admin: user.is_admin, account_type: user.account_type||'creator' } });
   } catch (e) {
     console.error('signin error:', e.message);
     res.status(500).json({ error: e.message });
@@ -129,7 +129,7 @@ router.post('/signin', async (req, res) => {
 router.get('/me', auth, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id,email,name,plan,promo_expires_at,created_at,is_admin FROM users WHERE id=$1',
+      'SELECT id,email,name,plan,promo_expires_at,created_at,is_admin,account_type FROM users WHERE id=$1',
       [req.user.id]
     );
     res.json(rows[0]);
