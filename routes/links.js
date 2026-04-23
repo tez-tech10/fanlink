@@ -13,8 +13,6 @@ const getPageId = async (userId) => {
 const maybeCreateDeepLink = async (url, iconKey, linkId, userId) => {
   if (!url || !DEEP_PLATFORMS.includes(iconKey)) return null;
   try {
-    // Check table exists first
-    await pool.query('SELECT 1 FROM deep_links LIMIT 1');
     // Check if one already exists for this link
     const { rows: existing } = await pool.query(
       'SELECT * FROM deep_links WHERE link_id=$1', [linkId]
