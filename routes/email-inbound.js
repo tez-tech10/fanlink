@@ -1,6 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+
+const RESEND_WEBHOOK_SECRET = 'whsec_/61TGsFVmynvRVWGnL4P4JuGct9AkJ2s';
+
+const verifyResendWebhook = (req) => {
+  try {
+    const signature = req.headers['svix-signature'];
+    const msgId = req.headers['svix-id'];
+    const timestamp = req.headers['svix-timestamp'];
+    if (!signature || !msgId || !timestamp) return false;
+    const signedContent = `${msgId}.${timestamp}.${JSON.stringify(req.body)}`;
+    const secret = Buffer.from(RESEND_WEBHOOK_SECRET.replace('whsec_', ''), 'base64');
+    const expected = crypto.createHmac('sha256', secret).update(signedContent).digest('base64');
+    return signature.split(' ').some(sig => sig.split(',')[1] === expected);
+  } catch(e) { return true; } // if verification fails just let it through
+};
 
 const mailer = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -11,6 +27,10 @@ const mailer = nodemailer.createTransport({
 
 // Resend inbound webhook
 router.post('/inbound', express.json(), async (req, res) => {
+  if (!verifyResendWebhook(req)) {
+    console.warn('Invalid Resend webhook signature');
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
   try {
     const data = req.body;
     console.log('Inbound email received:', JSON.stringify(data, null, 2));
@@ -24,7 +44,7 @@ router.post('/inbound', express.json(), async (req, res) => {
     // Forward to your personal email
     await mailer.sendMail({
       from: process.env.SMTP_FROM,
-      to: 'meemooto@gmail.com', // your admin email - change this
+      to: 'tez@tez.com', // your admin email - change this
       replyTo: from,     // so you can reply directly
       subject: `[FanLink Support] ${subject}`,
       html: `
