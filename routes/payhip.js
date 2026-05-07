@@ -18,20 +18,27 @@ const sendEmail = async (to, subject, html) => {
 };
 
 // Payhip webhook
-router.post('/webhook', express.urlencoded({ extended: true }), async (req, res) => {
+// Payhip webhook — accepts JSON or form-urlencoded
+router.post('/webhook', express.json(), express.urlencoded({ extended: true }), async (req, res) => {
   try {
-    const { buyer_email, security, product_title } = req.body;
-    console.log('Payhip webhook body:', req.body);
-    if (security !== PAYHIP_API_KEY) return res.status(401).send('Unauthorized');
-    if (!buyer_email) return res.status(400).send('No email');
+    const body = req.body;
+    console.log('Payhip webhook received:', JSON.stringify(body, null, 2));
 
-    const { rows } = await pool.query('SELECT id,name,email FROM users WHERE LOWER(email)=$1', [buyer_email.toLowerCase().trim()]);
-    if (!rows.length) { console.error('User not found:', buyer_email); return res.status(200).send('User not found'); }
+    const email = body.email || body.buyer_email;
+    if (!email) { console.error('No email in webhook'); return res.status(200).send('No email'); }
+
+    const { rows } = await pool.query('SELECT id,name,email FROM users WHERE LOWER(email)=$1', [email.toLowerCase().trim()]);
+    if (!rows.length) { console.error('User not found:', email); return res.status(200).send('User not found'); }
     const user = rows[0];
 
-    const isYearly = (product_title||'').toLowerCase().includes('year') || (req.body.product_id||'').includes('lv46o');
+    const items = body.items || [];
+    const productKey = items[0]?.product_key || body.product_key || '';
+    const productName = items[0]?.product_name || body.product_name || body.product_title || '';
+    const isYearly = productKey === 'lv46o' || productName.toLowerCase().includes('year');
+
     const expiresAt = new Date();
     isYearly ? expiresAt.setFullYear(expiresAt.getFullYear()+1) : expiresAt.setMonth(expiresAt.getMonth()+1);
+    console.log('Activating', isYearly?'yearly':'monthly', 'for', email, 'expires', expiresAt);
 
     await pool.query("UPDATE users SET plan='premium', promo_expires_at=$1 WHERE id=$2", [expiresAt.toISOString(), user.id]);
 
@@ -55,8 +62,10 @@ router.post('/webhook', express.urlencoded({ extended: true }), async (req, res)
       </div>`);
 
     res.status(200).send('OK');
-  } catch(e) { console.error('Webhook error:', e.message); res.status(500).send('Error'); }
+  } catch(e) { console.error('Webhook error:', e.message, e.stack); res.status(500).send('Error'); }
 });
+
+
 
 // Check expiring — call daily
 router.get('/check-expiring', async (req, res) => {
