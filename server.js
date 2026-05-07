@@ -29,6 +29,7 @@ app.use('/api/admin',     require('./routes/admin'));
 app.use('/api/deeplinks', require('./routes/deeplinks').router);
 app.use('/api/agency',    require('./routes/agency'));
 app.use('/api/payhip',    require('./routes/payhip'));
+app.use('/api/email',     require('./routes/email-inbound'));
 
 // Deep link redirect — fanlink.info/lnk/Xk9mP2qR4nYt
 app.get('/lnk/:code', async (req, res) => {
@@ -45,6 +46,7 @@ app.get('/lnk/:code', async (req, res) => {
 
 // Short tracking redirect
 app.use('/api/payhip',    require('./routes/payhip'));
+app.use('/api/email',     require('./routes/email-inbound'));
 
 // Short tracking redirect
 app.get('/r/:slug', (req, res) => res.redirect(`/api/tracking/r/${req.params.slug}`));
