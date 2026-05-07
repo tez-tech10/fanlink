@@ -28,6 +28,7 @@ app.use('/api/upload',    require('./routes/upload'));
 app.use('/api/admin',     require('./routes/admin'));
 app.use('/api/deeplinks', require('./routes/deeplinks').router);
 app.use('/api/agency',    require('./routes/agency'));
+app.use('/api/payhip',    require('./routes/payhip'));
 
 // Deep link redirect — fanlink.info/lnk/Xk9mP2qR4nYt
 app.get('/lnk/:code', async (req, res) => {
@@ -41,6 +42,9 @@ app.get('/lnk/:code', async (req, res) => {
     res.redirect(rows[0].original_url);
   } catch(e) { res.status(500).send('Server error'); }
 });
+
+// Short tracking redirect
+app.use('/api/payhip',    require('./routes/payhip'));
 
 // Short tracking redirect
 app.get('/r/:slug', (req, res) => res.redirect(`/api/tracking/r/${req.params.slug}`));
