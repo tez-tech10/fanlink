@@ -40,7 +40,7 @@ router.post('/inbound', express.json(), async (req, res) => {
     // If no body in payload, fetch from Resend API
     if (!htmlBody && emailId) {
       try {
-        const r = await fetch(`https://api.resend.com/v1/emails/${emailId}`, {
+        const r = await fetch(`https://api.resend.com/v1/emails/received/${emailId}`, {
           headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' }
         });
         const full = await r.json();
