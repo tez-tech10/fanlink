@@ -33,20 +33,23 @@ router.post('/inbound', express.json(), async (req, res) => {
 
     console.log(`Email from: ${from}, subject: ${subject}, id: ${emailId}`);
 
-    // Fetch full email body from Resend API
-    let htmlBody = '';
-    let textBody = '';
-    if (emailId) {
+    // Get body from webhook payload first, then fallback to API
+    let htmlBody = emailData.html || emailData.text || emailData.body || '';
+    let textBody = emailData.text || emailData.plain_text || '';
+
+    // If no body in payload, fetch from Resend API
+    if (!htmlBody && emailId) {
       try {
-        const r = await fetch(`https://api.resend.com/emails/${emailId}`, {
-          headers: { 'Authorization': `Bearer ${RESEND_API_KEY}` }
+        const r = await fetch(`https://api.resend.com/v1/emails/${emailId}`, {
+          headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' }
         });
         const full = await r.json();
-        console.log('Full email fetched:', JSON.stringify(full, null, 2));
-        htmlBody = full.html || full.text || '';
-        textBody = full.text || '';
+        console.log('Full email from API:', JSON.stringify(full, null, 2));
+        htmlBody = full.html || full.text || full.body || '';
+        textBody = full.text || full.plain_text || '';
       } catch(fe) {
         console.error('Failed to fetch email body:', fe.message);
+        htmlBody = `<em>Could not load email body. Email ID: ${emailId}</em>`;
       }
     }
 
