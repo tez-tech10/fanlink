@@ -29,7 +29,7 @@ router.post('/webhook', express.urlencoded({ extended: true }), async (req, res)
     if (!rows.length) { console.error('User not found:', buyer_email); return res.status(200).send('User not found'); }
     const user = rows[0];
 
-    const isYearly = (product_title||'').toLowerCase().includes('year') || (req.body.product_id||'').includes('anFfQ');
+    const isYearly = (product_title||'').toLowerCase().includes('year') || (req.body.product_id||'').includes('lv46o');
     const expiresAt = new Date();
     isYearly ? expiresAt.setFullYear(expiresAt.getFullYear()+1) : expiresAt.setMonth(expiresAt.getMonth()+1);
 
@@ -77,8 +77,8 @@ router.get('/check-expiring', async (req, res) => {
           <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:400;color:#f59e0b">Your subscription expires soon</h1>
           <p style="color:rgba(255,255,255,.6)">Hi ${u.name||u.email}, your FanLink Basic plan expires on <strong style="color:#fff">${d}</strong>.</p>
           <p style="font-size:14px;color:rgba(255,255,255,.6);margin-bottom:24px">Renew now to keep your public link and all premium features active.</p>
-          <a href="https://payhip.com/buy?link%5B%5D=lv46o&s=1" style="display:block;background:#4ade80;color:#000;text-decoration:none;padding:13px;border-radius:10px;text-align:center;font-weight:700;margin-bottom:10px">Renew Monthly — $29.99</a>
-          <a href="https://payhip.com/buy?link%5B%5D=anFfQ&s=1" style="display:block;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.3);text-decoration:none;padding:13px;border-radius:10px;text-align:center;font-weight:700">Renew Yearly — $249.99 (save $110)</a>
+          <a href="https://payhip.com/buy?link%5B%5D=anFfQ&s=1" style="display:block;background:#4ade80;color:#000;text-decoration:none;padding:13px;border-radius:10px;text-align:center;font-weight:700;margin-bottom:10px">Renew Monthly — $29.99</a>
+          <a href="https://payhip.com/buy?link%5B%5D=lv46o&s=1" style="display:block;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.3);text-decoration:none;padding:13px;border-radius:10px;text-align:center;font-weight:700">Renew Yearly — $249.99 (save $110)</a>
         </div>`);
       sent++;
     }
