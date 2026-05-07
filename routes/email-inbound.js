@@ -24,7 +24,7 @@ router.post('/inbound', express.json(), async (req, res) => {
     // Forward to your personal email
     await mailer.sendMail({
       from: process.env.SMTP_FROM,
-      to: 'tez@tez.com', // your admin email - change this
+      to: 'meemooto@gmail.com', // your admin email - change this
       replyTo: from,     // so you can reply directly
       subject: `[FanLink Support] ${subject}`,
       html: `
